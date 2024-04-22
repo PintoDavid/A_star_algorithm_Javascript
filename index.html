@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algoritmo A*</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #808080;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        position: relative; /* Para posicionar los mensajes correctamente */
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(20, 30px);
+        grid-template-rows: repeat(20, 30px);
+        gap: 1px;
+        border: 1px solid black;
+        max-width: 600px;
+        width: 100%;
+        position: relative; /* Para posicionar los mensajes correctamente */
+      }
+
+      .cell {
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        border: 1px solid lightgray;
+      }
+
+      .start {
+        background-color: green;
+      }
+
+      .goal {
+        background-color: red;
+      }
+
+      .wall {
+        background-color: rgb(52, 45, 161);
+      }
+
+      .menu {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      .menu button {
+        margin: 0 5px 10px;
+        padding: 5px 10px;
+      }
+
+      .instructions {
+        margin: 0px;
+        color: azure;
+        text-align: center;
+        font-size: x-large;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .selected {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
+      .message {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: rgb(0, 0, 0);
+        background-color: transparent;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+        text-align: center;
+        animation: fadeInOut 2s; /* Agrega animación */
+        pointer-events: none; /* Para desactivar la interacción con el ratón */
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .show {
+        animation: fadeInOut 2s; /* Agrega animación */
+      }
+
+      @keyframes fadeInOut {
+        0%,
+        100% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="instructions">
+        <p>
+          1. Para dibujar en la grilla, haz clic izquierdo para agregar
+          elementos (Inicio, Meta, Pared) y clic nuevamente para eliminarlos.
+          <br />
+          2. Luego, inicia el algoritmo A*. Puedes usar los botones avanzar o
+          retroceder para ver paso a paso el algoritmo.
+        </p>
+      </div>
+      <div class="menu">
+        <button
+          id="startButton"
+          onclick="setDrawMode('start')"
+          style="background-color: green; color: white"
+        >
+          Inicio
+        </button>
+        <button
+          id="goalButton"
+          onclick="setDrawMode('goal')"
+          style="background-color: red; color: white"
+        >
+          Meta
+        </button>
+        <button
+          id="wallButton"
+          onclick="setDrawMode('wall')"
+          style="background-color: rgb(52, 45, 161); color: white"
+        >
+          Pared
+        </button>
+      </div>
+      <div class="menu">
+        <button id="searchButton" onclick="startSearch()">Iniciar A*</button>
+        <button id="pauseButton" onclick="pauseSearch()" disabled>
+          Detener A*
+        </button>
+        <button id="advanceButton" onclick="advance()" disabled>
+          Avanzar paso A*
+        </button>
+        <button id="reverseButton" onclick="reverse()" disabled>
+          Retroceder paso A*
+        </button>
+        <button id="clearButton" onclick="clearGrid()">
+          Limpiar cuadrícula
+        </button>
+      </div>
+      <div id="grid" class="grid" onmousedown="handleMouseDown(event)">
+        <!-- Se generará la cuadrícula dinámicamente con JavaScript -->
+      </div>
+    </div>
+
+    <script>
+      let grid = document.getElementById("grid");
+      let placingWalls = false;
+      let drawMode = "wall";
+      let startPlaced = false;
+      let goalPlaced = false;
+      let searching = false;
+
+      // Función para crear la cuadrícula inicial
+      function createGrid() {
+        for (let i = 0; i < 20; i++) {
+          for (let j = 0; j < 20; j++) {
+            let cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.id = `${i}-${j}`;
+            cell.addEventListener("mouseenter", handleMouseEnter);
+            grid.appendChild(cell);
+          }
+        }
+      }
+
+      // Función para manejar el clic del mouse
+      function handleMouseDown(event) {
+        let cell = event.target;
+        if (event.buttons === 1) {
+          // Botón izquierdo
+          if (cell.classList.contains(drawMode)) {
+            cell.classList.remove(drawMode);
+            if (drawMode === "start") startPlaced = false;
+            if (drawMode === "goal") goalPlaced = false;
+          } else {
+            if (drawMode === "start" && startPlaced) {
+              let prevStart = grid.querySelector(".start");
+              prevStart.classList.remove("start");
+            } else if (drawMode === "goal" && goalPlaced) {
+              let prevGoal = grid.querySelector(".goal");
+              prevGoal.classList.remove("goal");
+            }
+            cell.classList.add(drawMode);
+            if (drawMode === "start") startPlaced = true;
+            if (drawMode === "goal") goalPlaced = true;
+          }
+        } else if (event.buttons === 2) {
+          // Botón derecho
+          if (cell.classList.contains(drawMode)) {
+            cell.classList.remove(drawMode);
+            if (drawMode === "start") startPlaced = false;
+            if (drawMode === "goal") goalPlaced = false;
+          }
+        }
+      }
+
+      // Función para manejar el movimiento del mouse
+      function handleMouseEnter(event) {
+        if (event.buttons === 1) {
+          // Botón izquierdo
+          let cell = event.target;
+          if (!cell.classList.contains(drawMode)) {
+            if (drawMode === "start" && startPlaced) {
+              let prevStart = grid.querySelector(".start");
+              prevStart.classList.remove("start");
+            } else if (drawMode === "goal" && goalPlaced) {
+              let prevGoal = grid.querySelector(".goal");
+              prevGoal.classList.remove("goal");
+            }
+            cell.classList.add(drawMode);
+            if (drawMode === "start") startPlaced = true;
+            if (drawMode === "goal") goalPlaced = true;
+          }
+        } else if (event.buttons === 2) {
+          // Botón derecho
+          let cell = event.target;
+          if (cell.classList.contains(drawMode)) {
+            cell.classList.remove(drawMode);
+            if (drawMode === "start") startPlaced = false;
+            if (drawMode === "goal") goalPlaced = false;
+          }
+        }
+      }
+
+      // Función para configurar el modo de dibujo
+      function setDrawMode(mode) {
+        drawMode = mode;
+        let buttons = document.querySelectorAll(".menu button");
+        buttons.forEach((button) => {
+          button.classList.remove("selected");
+        });
+        document.getElementById(mode + "Button").classList.add("selected");
+        showMessage(
+          `Click izquierdo para agregar.<br>Click derecho para quitar ${mode}`
+        );
+      }
+
+      // Función para mostrar un mensaje en la grilla
+      function showMessage(message) {
+        let messageDiv = document.createElement("div");
+        messageDiv.innerHTML = message;
+        messageDiv.classList.add("message", "show"); // Agrega la clase "show"
+        grid.appendChild(messageDiv);
+        setTimeout(() => {
+          messageDiv.classList.add("hidden");
+        }, 2000);
+        setTimeout(() => {
+          grid.removeChild(messageDiv);
+          messageDiv.classList.remove("show"); // Elimina la clase "show" al ocultar el mensaje
+        }, 2500);
+      }
+
+      // Función para iniciar la búsqueda
+      function startSearch() {
+        if (startPlaced && goalPlaced) {
+          document.getElementById("startButton").disabled = true;
+          document.getElementById("goalButton").disabled = true;
+          document.getElementById("wallButton").disabled = true;
+          document.getElementById("pauseButton").disabled = false;
+          document.getElementById("advanceButton").disabled = false;
+          document.getElementById("reverseButton").disabled = false;
+          searching = true;
+          document.getElementById("clearButton").disabled = true;
+          showMessage("Iniciando búsqueda");
+          // Implementa la lógica de búsqueda A* aquí
+          // Puedes obtener la posición inicial y la posición objetivo usando:
+          // let startCell = grid.querySelector('.start').id.split('-');
+          // let goalCell = grid.querySelector('.goal').id.split('-');
+        } else {
+          showMessage("Debes colocar tanto el inicio como la meta.");
+        }
+      }
+
+      // Función para pausar la búsqueda
+      function pauseSearch() {
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("goalButton").disabled = false;
+        document.getElementById("wallButton").disabled = false;
+        document.getElementById("pauseButton").disabled = true;
+        document.getElementById("advanceButton").disabled = true;
+        document.getElementById("reverseButton").disabled = true;
+        searching = false;
+        document.getElementById("clearButton").disabled = false;
+        showMessage("Se detuvo la búsqueda");
+        // Implementa la lógica para pausar la búsqueda aquí
+      }
+
+      // Función para avanzar en la búsqueda
+      function advance() {
+        // Implementa la lógica para avanzar en la búsqueda aquí
+      }
+
+      // Función para retroceder en la búsqueda
+      function reverse() {
+        // Implementa la lógica para retroceder en la búsqueda aquí
+      }
+
+      // Función para reiniciar la cuadrícula
+      function resetGrid() {
+        let cells = grid.querySelectorAll(".cell");
+        cells.forEach((cell) => {
+          cell.className = "cell";
+        });
+        startPlaced = false;
+        goalPlaced = false;
+        searching = false;
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("goalButton").disabled = false;
+        document.getElementById("wallButton").disabled = false;
+        document.getElementById("pauseButton").disabled = true;
+        document.getElementById("advanceButton").disabled = true;
+        document.getElementById("reverseButton").disabled = true;
+        document.getElementById("clearButton").disabled = false;
+      }
+
+      // Función para limpiar la cuadrícula
+      function clearGrid() {
+        let cells = grid.querySelectorAll(".cell");
+        cells.forEach((cell) => {
+          cell.className = "cell";
+        });
+        startPlaced = false;
+        goalPlaced = false;
+        searching = false;
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("goalButton").disabled = false;
+        document.getElementById("wallButton").disabled = false;
+        document.getElementById("pauseButton").disabled = true;
+        document.getElementById("advanceButton").disabled = true;
+        document.getElementById("reverseButton").disabled = true;
+        document.getElementById("clearButton").disabled = false;
+      }
+
+      createGrid();
+    </script>
+  </body>
+</html>
