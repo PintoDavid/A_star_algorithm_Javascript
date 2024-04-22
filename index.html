@@ -163,7 +163,6 @@
         <!-- Se generará la cuadrícula dinámicamente con JavaScript -->
       </div>
     </div>
-
     <script>
       let grid = document.getElementById("grid");
       let placingWalls = false;
@@ -253,7 +252,7 @@
         });
         document.getElementById(mode + "Button").classList.add("selected");
         showMessage(
-          `Click izquierdo para agregar.<br>Click derecho para quitar ${mode}`
+          `Click izquierdo para agregar.<br>Click de nuevo para quitar ${mode}`
         );
       }
 
@@ -270,27 +269,6 @@
           grid.removeChild(messageDiv);
           messageDiv.classList.remove("show"); // Elimina la clase "show" al ocultar el mensaje
         }, 2500);
-      }
-
-      // Función para iniciar la búsqueda
-      function startSearch() {
-        if (startPlaced && goalPlaced) {
-          document.getElementById("startButton").disabled = true;
-          document.getElementById("goalButton").disabled = true;
-          document.getElementById("wallButton").disabled = true;
-          document.getElementById("pauseButton").disabled = false;
-          document.getElementById("advanceButton").disabled = false;
-          document.getElementById("reverseButton").disabled = false;
-          searching = true;
-          document.getElementById("clearButton").disabled = true;
-          showMessage("Iniciando búsqueda");
-          // Implementa la lógica de búsqueda A* aquí
-          // Puedes obtener la posición inicial y la posición objetivo usando:
-          // let startCell = grid.querySelector('.start').id.split('-');
-          // let goalCell = grid.querySelector('.goal').id.split('-');
-        } else {
-          showMessage("Debes colocar tanto el inicio como la meta.");
-        }
       }
 
       // Función para pausar la búsqueda
@@ -317,24 +295,6 @@
         // Implementa la lógica para retroceder en la búsqueda aquí
       }
 
-      // Función para reiniciar la cuadrícula
-      function resetGrid() {
-        let cells = grid.querySelectorAll(".cell");
-        cells.forEach((cell) => {
-          cell.className = "cell";
-        });
-        startPlaced = false;
-        goalPlaced = false;
-        searching = false;
-        document.getElementById("startButton").disabled = false;
-        document.getElementById("goalButton").disabled = false;
-        document.getElementById("wallButton").disabled = false;
-        document.getElementById("pauseButton").disabled = true;
-        document.getElementById("advanceButton").disabled = true;
-        document.getElementById("reverseButton").disabled = true;
-        document.getElementById("clearButton").disabled = false;
-      }
-
       // Función para limpiar la cuadrícula
       function clearGrid() {
         let cells = grid.querySelectorAll(".cell");
@@ -354,6 +314,147 @@
       }
 
       createGrid();
+
+      // Clase para representar un nodo en el algoritmo A*
+      class Node {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.g = 0;
+          this.h = 0;
+          this.f = 0;
+          this.parent = null;
+        }
+      }
+
+      // Función para calcular la distancia Manhattan entre dos nodos
+      function heuristic(node, goal) {
+        return Math.abs(node.x - goal.x) + Math.abs(node.y - goal.y);
+      }
+
+      // Función para verificar si un nodo está dentro del rango de la cuadrícula
+      function isValid(x, y) {
+        return x >= 0 && x < 20 && y >= 0 && y < 20;
+      }
+
+      // Función para verificar si un nodo es transitable (no es una pared)
+      function isWalkable(x, y) {
+        let cell = document.getElementById(`${x}-${y}`);
+        return !cell.classList.contains("wall");
+      }
+
+      // Función para encontrar el camino utilizando el algoritmo A*
+      function findPath() {
+        let openList = [];
+        let closedList = [];
+
+        let startCell = grid.querySelector(".start").id.split("-");
+        let goalCell = grid.querySelector(".goal").id.split("-");
+
+        let startNode = new Node(
+          parseInt(startCell[0]),
+          parseInt(startCell[1])
+        );
+        let goalNode = new Node(parseInt(goalCell[0]), parseInt(goalCell[1]));
+
+        openList.push(startNode);
+
+        while (openList.length > 0) {
+          // Encontrar el nodo con el valor f mínimo en la lista abierta
+          let currentNode = openList.reduce((minNode, node) =>
+            node.f < minNode.f ? node : minNode
+          );
+
+          // Eliminar el nodo actual de la lista abierta y agregarlo a la lista cerrada
+          openList = openList.filter((node) => node !== currentNode);
+          closedList.push(currentNode);
+
+          // Si el nodo actual es el nodo objetivo, reconstruir el camino
+          if (currentNode.x === goalNode.x && currentNode.y === goalNode.y) {
+            let path = [];
+            let current = currentNode;
+            while (current !== null) {
+              path.push(current);
+              current = current.parent;
+            }
+            return path.reverse();
+          }
+
+          // Generar los nodos sucesores
+          let neighbors = [
+            [currentNode.x - 1, currentNode.y],
+            [currentNode.x + 1, currentNode.y],
+            [currentNode.x, currentNode.y - 1],
+            [currentNode.x, currentNode.y + 1],
+          ];
+
+          neighbors.forEach(([x, y]) => {
+            if (isValid(x, y) && isWalkable(x, y)) {
+              let neighbor = new Node(x, y);
+              if (
+                !closedList.some(
+                  (node) => node.x === neighbor.x && node.y === neighbor.y
+                )
+              ) {
+                let tentativeG = currentNode.g + 1;
+                if (
+                  !openList.some(
+                    (node) => node.x === neighbor.x && node.y === neighbor.y
+                  )
+                ) {
+                  openList.push(neighbor);
+                } else if (tentativeG >= neighbor.g) {
+                  return;
+                }
+
+                neighbor.g = tentativeG;
+                neighbor.h = heuristic(neighbor, goalNode);
+                neighbor.f = neighbor.g + neighbor.h;
+                neighbor.parent = currentNode;
+              }
+            }
+          });
+        }
+
+        return null; // No se encontró un camino
+      }
+
+      // Función para visualizar el camino encontrado
+      function visualizePath(path) {
+        if (path === null) {
+          showMessage("No se encontró un camino válido.");
+          return;
+        }
+
+        path.forEach((node, index) => {
+          setTimeout(() => {
+            let cell = document.getElementById(`${node.x}-${node.y}`);
+            cell.classList.add("selected");
+            if (index === path.length - 1) {
+              showMessage("Camino encontrado.");
+            }
+          }, index * 100);
+        });
+      }
+
+      // Función para iniciar la búsqueda A*
+      function startSearch() {
+        if (startPlaced && goalPlaced) {
+          document.getElementById("startButton").disabled = true;
+          document.getElementById("goalButton").disabled = true;
+          document.getElementById("wallButton").disabled = true;
+          document.getElementById("pauseButton").disabled = false;
+          document.getElementById("advanceButton").disabled = false;
+          document.getElementById("reverseButton").disabled = false;
+          searching = true;
+          document.getElementById("clearButton").disabled = true;
+          showMessage("Iniciando búsqueda");
+          let path = findPath();
+          visualizePath(path);
+        } else {
+          showMessage("Debes colocar tanto el inicio como la meta.");
+        }
+      }
     </script>
   </body>
 </html>
