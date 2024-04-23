@@ -108,6 +108,14 @@
           opacity: 1;
         }
       }
+      .path-finding {
+        background-color: #ff6347; /* Color coral */
+      }
+
+      /* Agrega estilos para la clase "complete-path" */
+      .complete-path {
+        background-color: #ffd700; /* Color dorado */
+      }
     </style>
   </head>
   <body>
@@ -146,8 +154,8 @@
       </div>
       <div class="menu">
         <button id="searchButton" onclick="startSearch()">Iniciar A*</button>
-        <button id="pauseButton" onclick="pauseSearch()" disabled>
-          Detener A*
+        <button id="pauseButton" onclick="toggleSearchMode()">
+          Automatico
         </button>
         <button id="advanceButton" onclick="advance()" disabled>
           Avanzar paso A*
@@ -170,6 +178,7 @@
       let startPlaced = false;
       let goalPlaced = false;
       let searching = false;
+      let automaticMode = true;
 
       // Función para crear la cuadrícula inicial
       function createGrid() {
@@ -243,6 +252,18 @@
         }
       }
 
+      // Función para configurar el modo de búsqueda
+      function toggleSearchMode() {
+        automaticMode = !automaticMode;
+        let pauseButton = document.getElementById("pauseButton");
+        if (!automaticMode) {
+          pauseButton.innerText = "Paso a Paso";
+        } else {
+          pauseButton.innerText = "Automatico";
+        }
+        togglePause();
+      }
+
       // Función para configurar el modo de dibujo
       function setDrawMode(mode) {
         drawMode = mode;
@@ -271,20 +292,6 @@
         }, 2500);
       }
 
-      // Función para pausar la búsqueda
-      function pauseSearch() {
-        document.getElementById("startButton").disabled = false;
-        document.getElementById("goalButton").disabled = false;
-        document.getElementById("wallButton").disabled = false;
-        document.getElementById("pauseButton").disabled = true;
-        document.getElementById("advanceButton").disabled = true;
-        document.getElementById("reverseButton").disabled = true;
-        searching = false;
-        document.getElementById("clearButton").disabled = false;
-        showMessage("Se detuvo la búsqueda");
-        // Implementa la lógica para pausar la búsqueda aquí
-      }
-
       // Función para avanzar en la búsqueda
       function advance() {
         // Implementa la lógica para avanzar en la búsqueda aquí
@@ -307,7 +314,7 @@
         document.getElementById("startButton").disabled = false;
         document.getElementById("goalButton").disabled = false;
         document.getElementById("wallButton").disabled = false;
-        document.getElementById("pauseButton").disabled = true;
+        document.getElementById("pauseButton").disabled = false;
         document.getElementById("advanceButton").disabled = true;
         document.getElementById("reverseButton").disabled = true;
         document.getElementById("clearButton").disabled = false;
@@ -360,6 +367,10 @@
         openList.push(startNode);
 
         while (openList.length > 0) {
+          if (!automaticMode) {
+            return; //  En teoria, debe cambiar el modo a los botones, de lo contrario es automatico
+          }
+
           // Encontrar el nodo con el valor f mínimo en la lista abierta
           let currentNode = openList.reduce((minNode, node) =>
             node.f < minNode.f ? node : minNode
@@ -429,9 +440,25 @@
         path.forEach((node, index) => {
           setTimeout(() => {
             let cell = document.getElementById(`${node.x}-${node.y}`);
-            cell.classList.add("selected");
+            if (
+              !cell.classList.contains("start") &&
+              !cell.classList.contains("goal")
+            ) {
+              cell.classList.add("selected");
+            }
             if (index === path.length - 1) {
               showMessage("Camino encontrado.");
+              resetSearch();
+              // Después de completar el recorrido, se cambia la clase para resaltar el color del camino completo
+              path.forEach((node) => {
+                let cell = document.getElementById(`${node.x}-${node.y}`);
+                if (
+                  !cell.classList.contains("start") &&
+                  !cell.classList.contains("goal")
+                ) {
+                  cell.classList.add("complete-path");
+                }
+              });
             }
           }, index * 100);
         });
@@ -443,7 +470,7 @@
           document.getElementById("startButton").disabled = true;
           document.getElementById("goalButton").disabled = true;
           document.getElementById("wallButton").disabled = true;
-          document.getElementById("pauseButton").disabled = false;
+          document.getElementById("pauseButton").disabled = true;
           document.getElementById("advanceButton").disabled = false;
           document.getElementById("reverseButton").disabled = false;
           searching = true;
@@ -454,6 +481,20 @@
         } else {
           showMessage("Debes colocar tanto el inicio como la meta.");
         }
+      }
+
+      // Función para resetear los datos después de encontrar el camino
+      function resetSearch() {
+        searching = false;
+        searchPaused = false;
+        document.getElementById("pauseButton").innerText = "Automatico";
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("goalButton").disabled = false;
+        document.getElementById("wallButton").disabled = false;
+        document.getElementById("pauseButton").disabled = false;
+        document.getElementById("advanceButton").disabled = true;
+        document.getElementById("reverseButton").disabled = true;
+        document.getElementById("clearButton").disabled = false;
       }
     </script>
   </body>
