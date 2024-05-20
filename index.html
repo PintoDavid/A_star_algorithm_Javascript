@@ -3,52 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Algoritmo A*</title>
-    <style>
+    <title>Algoritmo A*</title> /* Título que aparece en la pestaña */
+    <style> /*sección de estilos CSS internos que se aplicarán al contenido de la página.*/
       body {
         margin: 0;
         padding: 0;
         font-family: Arial, sans-serif;
-        background-color: #808080;
-      }
-
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
+        background-color: #b57712;
+      } /*estilo de la pantalla de fondo*/
+      
+      .container { /*clase container////////////////////*/
+        display: flex; /*contenedor flexible*/
+        flex-direction: column;/*elementos secundarios dentro del contenedor se colocaran en columnas*/
+        align-items: center;/*centra los elementos*/
+        padding: 20px;/*espacio entre el borde de la ventana y el contenedor*/
         position: relative; /* Para posicionar los mensajes correctamente */
-      }
+      }/*Orden de los objetos en la ventana*/
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(20, 30px);
-        grid-template-rows: repeat(20, 30px);
-        gap: 1px;
+     
+
+      .grid {/*clase grid////////////////////*/
+        display: grid; /*Manifiesta que tiene comportaiento de cuadricula*/
+        grid-template-columns: repeat(20, 30px);/*número y tamaño de columnas*/
+        grid-template-rows: repeat(20, 30px);/*número y tamaño de filas*/
+        gap: 1px;/*Espacio entre los nodos (cuadrados)*/
         border: 1px solid black;
-        max-width: 600px;
-        width: 100%;
+        max-width: 600px; /*ancho máximo del contenedor*/
+        width: 100%; /*ocupa el 100% del tamaño permitido*/
         position: relative; /* Para posicionar los mensajes correctamente */
+      }/*Configuraciónes del tablero de juego*/
+
+      .cell {/*clase cell////////////////////*/
+        width: 100%; /*cuanto ocupan de ancho los nodos (celdas)*/
+        height: 100%;/*cuanto ocupan de alto los nodos (celdas)*/
+        background-color: white; /*color de los nodos (celdas)*/
+        border: 1px solid lightgray; /*color división interna de las celdas*/
       }
 
-      .cell {
-        width: 100%;
-        height: 100%;
-        background-color: white;
-        border: 1px solid lightgray;
-      }
-
-      .start {
+      .start {/*clase start////////////////////*/
         background-color: green;
-      }
+      }/*Estilizar nodo de inicio*/
 
       .goal {
         background-color: red;
-      }
+      }/*Estilizar nodo final*/
 
       .wall {
         background-color: rgb(52, 45, 161);
-      }
+      }/*Estilizar obstaculos(muros)*/
 
       .menu {
         display: flex;
@@ -59,22 +61,22 @@
       .menu button {
         margin: 0 5px 10px;
         padding: 5px 10px;
-      }
+      }/*Espacio entre botones*/
 
       .instructions {
         margin: 0px;
         color: azure;
         text-align: center;
         font-size: x-large;
-      }
+      }/*color de las instrucciones*/
 
       .hidden {
         display: none;
-      }
+      }/*elementos para mostrar despues*/
 
       .selected {
         background-color: rgba(0, 0, 0, 0.1);
-      }
+      }/*resaltar elementos seleccionados o activos en este caso el camino*/
 
       .message {
         font-size: 1.2em;
@@ -89,11 +91,11 @@
         text-align: center;
         animation: fadeInOut 2s; /* Agrega animación */
         pointer-events: none; /* Para desactivar la interacción con el ratón */
-      }
+      } /*mensaje al usuario*/
 
       .hidden {
         display: none;
-      }
+      }/*elementos para mostrar despues*/
 
       .show {
         animation: fadeInOut 2s; /* Agrega animación */
@@ -107,7 +109,8 @@
         50% {
           opacity: 1;
         }
-      }
+      }  /* si quito esto no hace mucha diferencia en el código */
+      
       .path-finding {
         background-color: #ff6347; /* Color coral */
       }
@@ -115,7 +118,8 @@
       /* Agrega estilos para la clase "complete-path" */
       .complete-path {
         background-color: #ffd700; /* Color dorado */
-      }
+      }/* color activado cuando encuentra el nodo final */
+
     </style>
   </head>
   <body>
@@ -184,45 +188,73 @@
       function createGrid() {
         for (let i = 0; i < 20; i++) {
           for (let j = 0; j < 20; j++) {
+
+            let sumador = new Sumador(1, 1);///yeooooooooooooooooooooooo
+            let resultado = sumador.sumar();
+
             let cell = document.createElement("div");
             cell.classList.add("cell");
             cell.id = `${i}-${j}`;
+            cell.style.fontSize = "0.8em"; // Tamaño del texto utilizando la unidad em
+            cell.textContent = resultado; // Agregar el texto "hello" a la celda
             cell.addEventListener("mouseenter", handleMouseEnter);
             grid.appendChild(cell);
           }
         }
       }
+      class Sumador {
+  constructor(num1, num2) {
+    this.num1 = num1;
+    this.num2 = num2;
+  }
 
-      // Función para manejar el clic del mouse
-      function handleMouseDown(event) {
-        let cell = event.target;
-        if (event.buttons === 1) {
-          // Botón izquierdo
-          if (cell.classList.contains(drawMode)) {
+  sumar() {
+    return this.num1 + this.num2;
+  }
+}
+
+// Crear una instancia de la clase Sumador con los números 1 y 1
+let sumador = new Sumador(1, 1);
+
+// Llamar al método sumar para obtener el resultado
+let resultado = sumador.sumar();
+console.log(resultado); // Debería mostrar 2 en la consola
+
+
+
+// Función para manejar el clic del mouse y establecer la posición inicial
+function handleMouseDown(event) {
+    let cell = event.target;
+    if (event.buttons === 1) {
+        // Botón izquierdo
+        if (cell.classList.contains(drawMode)) {
             cell.classList.remove(drawMode);
             if (drawMode === "start") startPlaced = false;
             if (drawMode === "goal") goalPlaced = false;
-          } else {
+        } else {
             if (drawMode === "start" && startPlaced) {
-              let prevStart = grid.querySelector(".start");
-              prevStart.classList.remove("start");
+                let prevStart = grid.querySelector(".start");
+                prevStart.classList.remove("start");
             } else if (drawMode === "goal" && goalPlaced) {
-              let prevGoal = grid.querySelector(".goal");
-              prevGoal.classList.remove("goal");
+                let prevGoal = grid.querySelector(".goal");
+                prevGoal.classList.remove("goal");
             }
             cell.classList.add(drawMode);
-            if (drawMode === "start") startPlaced = true;
+            if (drawMode === "start") {
+                startPlaced = true;
+                initialPosition = cell.id.split('-').map(Number); // Establecer la posición inicial al hacer clic
+            }
             if (drawMode === "goal") goalPlaced = true;
-          }
-        } else if (event.buttons === 2) {
-          // Botón derecho
-          if (cell.classList.contains(drawMode)) {
+        }
+    } else if (event.buttons === 2) {
+        // Botón derecho
+        if (cell.classList.contains(drawMode)) {
             cell.classList.remove(drawMode);
             if (drawMode === "start") startPlaced = false;
             if (drawMode === "goal") goalPlaced = false;
-          }
         }
-      }
+    }
+}
 
       // Función para manejar el movimiento del mouse
       function handleMouseEnter(event) {
@@ -252,6 +284,27 @@
         }
       }
 
+           // Función para mover el nodo de inicio a una nueva celda
+function moveStartNode(cellId) {
+  let cell = document.getElementById(cellId);
+  if (!cell.classList.contains("wall") && !cell.classList.contains("goal")) {
+    let currentStartCell = grid.querySelector(".start");
+    currentStartCell.classList.remove("start"); // Remover la clase del nodo de inicio actual
+    cell.classList.add("start"); // Agregar la clase del nodo de inicio a la nueva celda
+    startNode = cellId; // Actualizar el ID del nodo de inicio
+  }
+}
+
+// Evento para establecer el nodo de inicio al hacer clic en una celda de la cuadrícula
+grid.addEventListener("mousedown", function(event) {
+  let cell = event.target;
+  if (!searching && event.buttons === 1 && !cell.classList.contains("wall")) {
+    if (cell.classList.contains("start")) {
+      moveStartNode(cell.id); // Mover el nodo de inicio si se hace clic en una celda de inicio
+    }
+  }
+});
+
       // Función para configurar el modo de búsqueda
       function toggleSearchMode() {
         automaticMode = !automaticMode;
@@ -262,7 +315,8 @@
           pauseButton.innerText = "Automatico";
         }
         togglePause();
-      }
+      }// alterna entre el modo automatico y paso paso
+
 
       // Función para configurar el modo de dibujo
       function setDrawMode(mode) {
@@ -276,7 +330,6 @@
           `Click izquierdo para agregar.<br>Click de nuevo para quitar ${mode}`
         );
       }
-
       // Función para mostrar un mensaje en la grilla
       function showMessage(message) {
         let messageDiv = document.createElement("div");
@@ -291,11 +344,209 @@
           messageDiv.classList.remove("show"); // Elimina la clase "show" al ocultar el mensaje
         }, 2500);
       }
+//////////////////////////////////////////////////////////////////////////////////////////
+// Función para avanzar en la búsqueda
+// Variables globales para almacenar la posición inicial y el costo g
+let initialPosition = []; // La posición inicial se establecerá cuando se haga clic en 'start'
+let triedPaths = []; // Array para almacenar los caminos intentados
+let movementHistory = []; // Array para almacenar los movimientos de "start"
 
-      // Función para avanzar en la búsqueda
-      function advance() {
-        // Implementa la lógica para avanzar en la búsqueda aquí
-      }
+function advance() {
+    // Obtener el elemento "start"
+    let startElement = document.querySelector('.start');
+    if (!startElement) return;
+
+    // Obtener la posición actual del elemento "start" en la grilla
+    let currentPosition = startElement.id.split('-').map(Number);
+    let currentRow = currentPosition[0];
+    let currentCol = currentPosition[1];
+
+    // Obtener el elemento "goal"
+    let goalElement = document.querySelector('.goal');
+    if (!goalElement) return;
+
+    // Obtener la posición del elemento "goal" en la grilla
+    let goalPosition = goalElement.id.split('-').map(Number);
+    let goalRow = goalPosition[0];
+    let goalCol = goalPosition[1];
+
+    // Verificar si hemos alcanzado el objetivo
+    if (currentRow === goalRow && currentCol === goalCol) {
+        alert('Encontrado!');
+        return;
+    }
+
+    // Array de direcciones adyacentes (arriba, abajo, izquierda, derecha)
+    let directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    // Inicializar variables para rastrear el nodo objetivo
+    let candidates = []; // Array para guardar los nodos candidatos
+
+    // Iterar sobre las direcciones adyacentes
+    for (let [dx, dy] of directions) {
+        let newRow = currentRow + dx;
+        let newCol = currentCol + dy;
+
+        // Verificar si la nueva posición está dentro de la cuadrícula
+        if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20) continue;
+
+        // Obtener el elemento en la nueva posición
+        let newElement = document.getElementById(`${newRow}-${newCol}`);
+
+        // Verificar si el nuevo elemento es un muro
+        if (newElement.classList.contains('wall')) continue;
+
+        // Calcular el costo g (distancia de Manhattan desde la posición inicial)
+        let g = Math.abs(initialPosition[0] - newRow) + Math.abs(initialPosition[1] - newCol);
+       // Verificar si el costo g es igual a 0 y cambiar el color de fondo a verde si es así
+
+       if (g === 0 && !(newRow === goalRow && newCol === goalCol)) {
+    newElement.style.backgroundColor = 'green'; // Cambiar el color de fondo a verde
+}
+
+        // Calcular el costo h (distancia de Manhattan desde la posición actual hasta el goal, evitando muros)
+        let h = calculateHeuristic(newRow, newCol, goalRow, goalCol);
+
+        // Calcular el costo f (suma de g y h)
+        let f = g + h;
+
+        // Mostrar los costos en el cuadro adyacente
+        newElement.textContent = `f: ${f}, g: ${g}, h: ${h}`;
+        newElement.style.fontSize = "8px"; // Cambia el tamaño de fuente
+
+        // Agregar el nodo candidato al array de candidatos
+        candidates.push({element: newElement, f: f, g: g, h: h});
+       
+    }
+
+    // Ordenar los candidatos por costo f, luego h, luego g
+    candidates.sort((a, b) => a.f - b.f || a.h - b.h || a.g - b.g);
+
+   // Seleccionar el mejor nodo candidato no intentado previamente
+// Seleccionar el mejor nodo candidato no intentado previamente
+let selectedNode = null;
+for (let candidate of candidates) {
+    let candidatePosition = candidate.element.id.split('-').map(Number);
+    if (!triedPaths.some(path => path[0] === candidatePosition[0] && path[1] === candidatePosition[1])) {
+        selectedNode = candidate.element;
+
+        // Verificar si el nodo candidato seleccionado es el objetivo
+        let isGoal = candidatePosition[0] === goalRow && candidatePosition[1] === goalCol;
+
+        // Colorear el nodo candidato seleccionado de amarillo si no es el objetivo
+        if (!isGoal) {
+            selectedNode.style.backgroundColor = 'yellow';
+        }
+        
+        break;
+    }
+}
+
+    // Si no se encontró un nodo no intentado, restablecer los caminos intentados y seleccionar el primero
+    if (!selectedNode && candidates.length > 0) {
+        triedPaths = [];
+        selectedNode = candidates[0].element;
+        
+    }
+
+    // Mover "start" al nodo seleccionado si se encontró uno válido
+    if (selectedNode) {
+        startElement.classList.remove('start');
+        selectedNode.classList.add('start');
+        
+        // Agregar la posición seleccionada a los caminos intentados
+        let selectedPosition = selectedNode.id.split('-').map(Number);
+        triedPaths.push(selectedPosition);
+        
+    }
+
+}
+
+function calculateHeuristic(startRow, startCol, goalRow, goalCol) {
+    let directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    let visited = new Set();
+    let queue = [{row: startRow, col: startCol, dist: 0}];
+    
+    while (queue.length > 0) {
+        let {row, col, dist} = queue.shift();
+        
+        // Verificar si hemos alcanzado el objetivo
+        if (row === goalRow && col === goalCol) {
+            return dist;
+        }
+        
+        for (let [dx, dy] of directions) {
+            let newRow = row + dx;
+            let newCol = col + dy;
+            let newKey = `${newRow}-${newCol}`;
+            
+            // Verificar si la nueva posición está dentro de la cuadrícula y no es un muro
+            if (newRow >= 0 && newRow < 20 && newCol >= 0 && newCol < 20 && 
+                !document.getElementById(`${newRow}-${newCol}`).classList.contains('wall') &&
+                !visited.has(newKey)) {
+                visited.add(newKey);
+                queue.push({row: newRow, col: newCol, dist: dist + 1});
+            }
+        }
+    }
+    
+    return Infinity; // Si no se encuentra un camino, devolver infinito
+
+    // Mover "start" al nodo seleccionado si se encontró uno válido
+
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+function reverse() {
+
+   // Obtener el elemento "start"
+   let startElement = document.querySelector('.start');
+    if (!startElement) return;
+
+    // Cambiar el color de fondo del elemento "start" a morado
+    startElement.style.backgroundColor = 'purple';
+
+
+}
+
+
+// Asumiendo que setDrawMode y otras funciones están implementadas como antes
+
+// Función para crear la cuadrícula inicial y definir el evento click
+function createGrid() {
+    for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 20; j++) {
+            let cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.id = `${i}-${j}`;
+            cell.addEventListener("click", handleClick);
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function handleClick(event) {
+    let cell = event.target;
+    if (drawMode === 'start' && !startPlaced) {
+        cell.classList.add('start');
+        startPlaced = true;
+        initialPosition = cell.id.split('-').map(Number);
+    } else if (drawMode === 'goal' && !goalPlaced) {
+        cell.classList.add('goal');
+        goalPlaced = true;
+    } else if (drawMode === 'wall') {
+        cell.classList.toggle('wall');
+    }
+}
+
+// Llamar a createGrid() al cargar la página
+createGrid();
+
+
+
+
 
       // Función para retroceder en la búsqueda
       function reverse() {
@@ -332,7 +583,7 @@
           this.f = 0;
           this.parent = null;
         }
-      }
+      } // inicialización de las variables y costos g, h y f
 
       // Función para calcular la distancia Manhattan entre dos nodos
       function heuristic(node, goal) {
